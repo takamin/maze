@@ -1,0 +1,7 @@
+.vscode
+node_modules
+*.json
+*.md
+*.html
+*.css
+*.adoc
