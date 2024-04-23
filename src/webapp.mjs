@@ -1,6 +1,8 @@
-import { Maze } from "./maze.mjs";
+import { MazeLayingMethod } from "./maze-laying-method.mjs";
+import { MazeResolver } from "./maze-resolver.mjs";
 export class WebApp {
-  static cellSize = 10;
+  static cellSize = 11;
+  static PathDotSize = 3;
   static run() {
     const webApp = new WebApp();
     webApp.refreshMaze();
@@ -9,9 +11,13 @@ export class WebApp {
     this.sizeX = 51;
     this.sizeY = 31;
     this.maze = null;
+    this.canvas = null;
+    this.resolver = null;
+
     const numberInputWidth = document.getElementById("numberInputWidth");
     const numberInputHeight = document.getElementById("numberInputHeight");
     const buttonMakeMaze = document.getElementById("buttonMakeMaze");
+    const buttonResolve = document.getElementById("buttonResolve");
     numberInputWidth.value = this.sizeX;
     numberInputHeight.value = this.sizeY;
     numberInputWidth.addEventListener("change", () => {
@@ -43,32 +49,99 @@ export class WebApp {
     buttonMakeMaze.addEventListener("click", () => {
       this.refreshMaze();
     });
+    buttonResolve.addEventListener("click", async () => {
+      await this.resolveMaze();
+    });
   }
   refreshMaze() {
-    const mazeElement = document.getElementById("maze");
-    while (mazeElement.firstElementChild) {
-      mazeElement.firstElementChild.remove();
-    }
     setTimeout(() => {
-      this.maze = this.newMaze();
+      const mazeElement = document.getElementById("maze");
+      while (mazeElement.firstElementChild) {
+        mazeElement.firstElementChild.remove();
+      }
+      this.maze = new MazeLayingMethod(this.sizeX, this.sizeY);
+      this.maze.setStartPosition(0, 1);
+      this.maze.setGoalPosition(this.sizeX - 1, this.sizeY - 2);
+
+      this.maze.createRandomMaze();
+
+      const canvas = document.createElement("canvas");
+      canvas.setAttribute("width", `${this.sizeX * WebApp.cellSize}px`);
+      canvas.setAttribute("height", `${this.sizeY * WebApp.cellSize}px`);
+      this.canvas = canvas;
       this.drawMaze();
-      this.canvas = this.drawMaze();
+
       mazeElement.appendChild(this.canvas);
+
+      this.resolver = new MazeResolver(this.maze);
     }, 0);
   }
-  newMaze() {
-    const maze = new Maze(this.sizeX, this.sizeY);
-    maze.setStartPosition(0, 1);
-    maze.setGoalPosition(this.sizeX - 1, this.sizeY - 2);
-    maze.createRandomMaze();
-    return maze;
+  async resolveMaze() {
+    await this.buryDeadEndAll();
+    await this.walkThroughout();
+  }
+  buryDeadEndAll() {
+    return new Promise((resolve, reject) => {
+      let tid = null;
+      const beryDeadEnd1 = () => {
+        try {
+          const buried = this.resolver.buryDeadEnd();
+          if (buried.length === 0) {
+            clearInterval(tid);
+            resolve();
+          }
+          this.drawDeadEnd(buried);
+        } catch (e) {
+          console.error(e);
+          clearInterval(tid);
+          reject(e);
+        }
+      }
+      tid = setInterval(beryDeadEnd1, 1);
+      beryDeadEnd1();
+    });
+  }
+  walkThroughout() {
+    return new Promise((resolve, reject) => {
+      let tid = null;
+      const walkThrough1 = () => {
+        try {
+          const steps = this.resolver.walk();
+          const paths = this.resolver.path.slice(-steps);
+          this.drawPath(paths);
+          const { x, y } = this.resolver.pos;
+          if (this.maze.isGoal(x, y)) {
+            clearInterval(tid);
+            resolve();
+          }
+        } catch (e) {
+          console.error(e);
+          clearInterval(tid);
+          reject(e);
+        }
+      }
+      tid = setInterval(walkThrough1, 1);
+      walkThrough1();
+    });
+  }
+  drawDeadEnd(coords) {
+    const ctx = this.canvas.getContext("2d");
+    for (const { x, y } of coords) {
+      if (this.maze.isAisle(x, y)) {
+        this.drawBlock(ctx, x, y, "#000", "#ddd");
+      }
+    }
+  }
+  drawPath(coords) {
+    const ctx = this.canvas.getContext("2d");
+    for (const { x, y } of coords) {
+      if (!this.maze.isStart(x, y) && !this.maze.isGoal(x, y)) {
+        this.drawDot(ctx, x, y, "#00f", "#226");
+      }
+    }
   }
   drawMaze() {
-    // 迷路を描くCanvasを準備
-    const canvas = document.createElement("canvas");
-    canvas.setAttribute("width", `${this.sizeX * WebApp.cellSize}px`);
-    canvas.setAttribute("height", `${this.sizeY * WebApp.cellSize}px`);
-    const ctx = canvas.getContext("2d");
+    const ctx = this.canvas.getContext("2d");
     // 迷路を描く
     for (let y = 0; y < this.sizeY; y++) {
       for (let x = 0; x < this.sizeX; x++) {
@@ -89,7 +162,6 @@ export class WebApp {
         }
       }
     }
-    return canvas;
   }
   // レンガ積みのようなパターンを描く
   drawBlock(ctx, x, y, color, backColor) {
@@ -126,5 +198,15 @@ export class WebApp {
     ctx.fillStyle = fillColor;
     ctx.strokeText(text, xx + 2, yy + offsetBaseLine);
     ctx.fillText(text, xx + 2, yy + offsetBaseLine);
+  }
+  drawDot(ctx, x, y, color, backColor) {
+    const dotSize = WebApp.PathDotSize;
+    const mxy = Math.floor((WebApp.cellSize - dotSize) / 2);
+    const xx = x * WebApp.cellSize + mxy;
+    const yy = y * WebApp.cellSize + mxy;
+    ctx.fillStyle = backColor;
+    ctx.fillRect(xx + 1, yy + 1, dotSize, dotSize);
+    ctx.fillStyle = color;
+    ctx.fillRect(xx, yy, dotSize, dotSize);
   }
 }
