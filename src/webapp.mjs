@@ -1,80 +1,139 @@
+import { MazeDiggingMethod } from "./maze-digging-method.mjs";
 import { MazeLayingMethod } from "./maze-laying-method.mjs";
+import { MazeNoMaze } from "./maze-no-maze.mjs";
 import { MazeResolver } from "./maze-resolver.mjs";
+/**
+ * @typedef {import("./maze.mjs").Maze} Maze
+ */
 export class WebApp {
   static cellSize = 11;
   static PathDotSize = 3;
-  static run() {
-    const webApp = new WebApp();
-    webApp.refreshMaze();
-  }
-  constructor() {
-    this.sizeX = 51;
-    this.sizeY = 31;
-    this.maze = null;
-    this.canvas = null;
-    this.resolver = null;
-
+  /**
+   * @type {number}
+   */
+  sizeX;
+  /**
+   * @type {number}
+   */
+  sizeY;
+  /**
+   * @type {Maze}
+   */
+  maze;
+  /**
+   * @type {HTMLCanvasElement}
+   */
+  canvas;
+  /**
+   * @type {MazeResolver}
+   */
+  resolver;
+  static async run() {
     const numberInputWidth = document.getElementById("numberInputWidth");
     const numberInputHeight = document.getElementById("numberInputHeight");
-    const buttonMakeMaze = document.getElementById("buttonMakeMaze");
+    const buttonMakeMazeLaying = document.getElementById("buttonMakeMazeLaying");
+    const buttonMakeMazeDigging = document.getElementById("buttonMakeMazeDigging");
     const buttonResolve = document.getElementById("buttonResolve");
-    numberInputWidth.value = this.sizeX;
-    numberInputHeight.value = this.sizeY;
+
+    let lastSizeX = parseInt(numberInputWidth.value);
+    let lastSizeY = parseInt(numberInputHeight.value);
+
+    const app = new WebApp();
+    app.canvas = null;
+    app.resolver = null;
+    app.maze = new MazeNoMaze(lastSizeX, lastSizeY);
+    await app.updateSize(lastSizeX, lastSizeY);
+
     numberInputWidth.addEventListener("change", () => {
       const value = parseInt(numberInputWidth.value);
       if (value % 2 !== 0) {
-        this.sizeX = value;
+        lastSizeX = value;
       } else {
-        if (value < this.sizeX) {
-          this.sizeX = value - 1;
+        if (value < lastSizeX) {
+          numberInputHeight.value = `${value - 1}`;
         } else {
-          this.sizeX = value + 1;
+          numberInputHeight.value = `${value + 1}`;
         }
-        numberInputWidth.value = `${this.sizeX}`;
       }
     });
     numberInputHeight.addEventListener("change", () => {
       const value = parseInt(numberInputHeight.value);
       if (value % 2 !== 0) {
-        this.sizeY = value;
+        lastSizeY = value;
       } else {
-        if (value < this.sizeY) {
-          this.sizeY = value - 1;
+        if (value < lastSizeY) {
+          numberInputHeight.value = `${value - 1}`;
         } else {
-          this.sizeY = value + 1;
+          numberInputHeight.value = `${value + 1}`;
         }
-        numberInputHeight.value = `${this.sizeY}`;
       }
     });
-    buttonMakeMaze.addEventListener("click", () => {
-      this.refreshMaze();
+    buttonMakeMazeLaying.addEventListener("click", () => {
+      app.maze = new MazeLayingMethod(app.sizeX, app.sizeY);
+      app.updateSize(lastSizeX, lastSizeY);
+    });
+    buttonMakeMazeDigging.addEventListener("click", () => {
+      app.maze = new MazeDiggingMethod(app.sizeX, app.sizeY);
+      app.updateSize(lastSizeX, lastSizeY);
     });
     buttonResolve.addEventListener("click", async () => {
-      await this.resolveMaze();
+      await app.resolveMaze();
     });
   }
-  refreshMaze() {
-    setTimeout(() => {
-      const mazeElement = document.getElementById("maze");
-      while (mazeElement.firstElementChild) {
-        mazeElement.firstElementChild.remove();
-      }
-      this.maze = new MazeLayingMethod(this.sizeX, this.sizeY);
-      this.maze.setStartPosition(0, 1);
-      this.maze.setGoalPosition(this.sizeX - 1, this.sizeY - 2);
-
-      this.maze.createRandomMaze();
-
-      const canvas = document.createElement("canvas");
-      canvas.setAttribute("width", `${this.sizeX * WebApp.cellSize}px`);
-      canvas.setAttribute("height", `${this.sizeY * WebApp.cellSize}px`);
-      this.canvas = canvas;
+  async updateSize(sizeX, sizeY) {
+    if (this.sizeX !== sizeX || this.sizeY !== sizeY) {
+      this.sizeX = sizeX;
+      this.sizeY = sizeY;
+      this.refreshCanvas();
+    }
+    await this.clearMaze();
+    await this.generateMaze();
+    await this.refreshMaze();
+  }
+  refreshCanvas() {
+    const mazeElement = document.getElementById("maze");
+    while (mazeElement.firstElementChild) {
+      mazeElement.firstElementChild.remove();
+    }
+    const canvas = document.createElement("canvas");
+    canvas.setAttribute("width", `${this.sizeX * WebApp.cellSize}px`);
+    canvas.setAttribute("height", `${this.sizeY * WebApp.cellSize}px`);
+    this.canvas = canvas;
+    mazeElement.appendChild(this.canvas);
+  }
+  async clearMaze() {
+    await new Promise((resolve, reject) => {
+      this.maze.init();
       this.drawMaze();
-
-      mazeElement.appendChild(this.canvas);
-
-      this.resolver = new MazeResolver(this.maze);
-    }, 0);
+      resolve();
+    });
+  }
+  async generateMaze() {
+    await new Promise((resolve, reject) => {
+      const createMaze = () => {
+        try {
+          const result = this.maze.generate();
+          if (result === true) {
+            clearInterval(tid);
+            resolve();
+          } else if (Array.isArray(result)) {
+            result.forEach(({ x, y }) => this.drawCell(x, y));
+          }
+        } catch (err) {
+          console.error(err);
+          clearInterval(tid);
+          reject(err);
+        }
+      }
+      const tid = setInterval(createMaze, 1);
+      createMaze();
+    });
+  }
+  async refreshMaze() {
+    this.maze.setStartPosition(0, 1);
+    this.maze.setGoalPosition(this.sizeX - 1, this.sizeY - 2);
+    this.drawMaze();
+    this.resolver = new MazeResolver(this.maze);
   }
   async resolveMaze() {
     await this.buryDeadEndAll();
@@ -128,7 +187,7 @@ export class WebApp {
     const ctx = this.canvas.getContext("2d");
     for (const { x, y } of coords) {
       if (this.maze.isAisle(x, y)) {
-        this.drawBlock(ctx, x, y, "#000", "#ddd");
+        this.drawBlock(ctx, x, y, "#aaa", "#ddd");
       }
     }
   }
@@ -141,25 +200,28 @@ export class WebApp {
     }
   }
   drawMaze() {
-    const ctx = this.canvas.getContext("2d");
     // 迷路を描く
     for (let y = 0; y < this.sizeY; y++) {
       for (let x = 0; x < this.sizeX; x++) {
-        if (!this.maze.isAisle(x, y)) {
-          // 壁
-          this.drawBlock(ctx, x, y, "#800", "#ddd");
-        } else {
-          // 通路
-          this.drawBlock(ctx, x, y, "#ccc", "#ddd");
-          if (this.maze.isStart(x, y)) {
-            // スタート
-            this.drawText(ctx, x, y, "S", "#00a", "#00f");
-          } else if (this.maze.isGoal(x, y)) {
-            // ゴール
-            this.drawText(ctx, x, y, "G", "#a00", "#f00");
-          } else {
-          }
-        }
+        this.drawCell(x, y);
+      }
+    }
+  }
+  drawCell(x, y) {
+    const ctx = this.canvas.getContext("2d");
+    if (!this.maze.isAisle(x, y)) {
+      // 壁
+      this.drawBlock(ctx, x, y, "#800", "#ddd");
+    } else {
+      // 通路
+      this.drawBlock(ctx, x, y, "#ccc", "#ddd");
+      if (this.maze.isStart(x, y)) {
+        // スタート
+        this.drawText(ctx, x, y, "S", "#00a", "#00f");
+      } else if (this.maze.isGoal(x, y)) {
+        // ゴール
+        this.drawText(ctx, x, y, "G", "#a00", "#f00");
+      } else {
       }
     }
   }

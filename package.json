@@ -1,6 +1,6 @@
 {
   "name": "maze-maze",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "迷路",
   "main": "index.js",
   "scripts": {

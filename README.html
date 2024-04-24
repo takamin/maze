@@ -5,9 +5,10 @@
   <body>
     <h1>迷路</h1>
     サイズ
-    横: <input type="number" id="numberInputWidth" value="51" min="5">
-    縦: <input type="number" id="numberInputHeight" value="31" min="5">
-    <button id="buttonMakeMaze">迷路を作る！</button>
+    横: <input type="number" id="numberInputWidth" value="35" min="5">
+    縦: <input type="number" id="numberInputHeight" value="35" min="5">
+    <button id="buttonMakeMazeLaying">棒倒し法で迷路を作る！</button>
+    <button id="buttonMakeMazeDigging">穴掘り法で迷路を作る！</button>
     <button id="buttonResolve">迷路を解く！</button>
     <div id="maze"></div>
     <script src="./src/maze.mjs" type="module"></script>
