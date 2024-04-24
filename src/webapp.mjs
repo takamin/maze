@@ -18,8 +18,8 @@ export class WebApp {
     const numberInputHeight = document.getElementById("numberInputHeight");
     const buttonMakeMaze = document.getElementById("buttonMakeMaze");
     const buttonResolve = document.getElementById("buttonResolve");
-    numberInputWidth.value = this.sizeX;
-    numberInputHeight.value = this.sizeY;
+    this.sizeX = parseInt(numberInputWidth.value);
+    this.sizeY = parseInt(numberInputHeight.value);
     numberInputWidth.addEventListener("change", () => {
       const value = parseInt(numberInputWidth.value);
       if (value % 2 !== 0) {
