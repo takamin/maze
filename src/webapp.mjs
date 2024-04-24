@@ -128,7 +128,7 @@ export class WebApp {
     const ctx = this.canvas.getContext("2d");
     for (const { x, y } of coords) {
       if (this.maze.isAisle(x, y)) {
-        this.drawBlock(ctx, x, y, "#000", "#ddd");
+        this.drawBlock(ctx, x, y, "#aaa", "#ddd");
       }
     }
   }
