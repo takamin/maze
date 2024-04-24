@@ -70,6 +70,18 @@ export class Maze {
     this.goalY = goalY >= 0 ? goalY : this.sizeY + goalY;
     this.map[this.goalY][this.goalX] = Maze.Goal;
   }
+  setAisleAt(x, y) {
+    if (x < 0 || x >= this.sizeX || y < 0 || y >= this.sizeY) {
+      return;
+    }
+    this.map[y][x] = Maze.Aisle;
+  };
+  setWallAt(x, y) {
+    if (x < 0 || x >= this.sizeX || y < 0 || y >= this.sizeY) {
+      return;
+    }
+    this.map[y][x] = Maze.Wall;
+  };
   /**
    * 指定座標が通路かどうか判定する
    * @param {number} x 
@@ -78,6 +90,9 @@ export class Maze {
    * @return {boolean}
    */
   isAisle(x, y) {
+    if (x < 0 || x >= this.sizeX || y < 0 || y >= this.sizeY) {
+      return false;
+    }
     const state = this.map[y][x];
     const aisle =
       state === Maze.Aisle ||
@@ -134,9 +149,14 @@ export class Maze {
     }
     return rows.join('\n');
   }
+  init() {
+    this.map = Maze.createMap(this.sizeX, this.sizeY);
+    return true;
+  }
   /**
-   * ランダムに迷路を作成する
+   * 迷路を作成する
    */
-  createRandomMaze() {
+  generate() {
+    return true;
   }
 }
