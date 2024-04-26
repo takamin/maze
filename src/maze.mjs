@@ -138,7 +138,7 @@ export class Maze {
       for (let x = 0; x < this.sizeX; x++) {
         const p = this.map[y][x];
         switch (p) {
-          case Maze.Aisle: row.push(" "); break;
+          case Maze.Aisle: row.push("."); break;
           case Maze.Wall: row.push("#"); break;
           case Maze.Start: row.push("S"); break;
           case Maze.Goal: row.push("G"); break;
@@ -158,5 +158,38 @@ export class Maze {
    */
   generate() {
     return true;
+  }
+  static fromText(text) {
+    const lines = text.split('\n');
+    const sizeY = lines.length;
+    const sizeX = Math.max(...lines.map((l) => l.length));
+    if (sizeX < 5 || sizeY < 5) {
+      throw new Error('迷路のサイズが小さすぎます。');
+    }
+    const maze = new Maze(sizeX, sizeY);
+    // 一旦全部全部壁にする
+    for (let y = 0; y < this.sizeY; y++) {
+      for (let x = 0; x < this.sizeX; x++) {
+        maze.setWallAt(x, y);
+      }
+    }
+    lines.forEach((line, y) => {
+      line.split('').forEach((p, x) => {
+        switch (p) {
+          case '.': maze.setAisleAt(x, y); break;
+          case '#': maze.setWallAt(x, y); break;
+          case 'S': maze.setStartPosition(x, y); break;
+          case 'G': maze.setGoalPosition(x, y); break;
+          default: break;
+        }
+      });
+    });
+    if (maze.startX === null || maze.startY === null) {
+      maze.setStartPosition(0, 1);
+    }
+    if (maze.goalX === null || maze.goalY === null) {
+      maze.setGoalPosition(sizeX - 1, sizeY - 2);
+    }
+    return maze;
   }
 }
