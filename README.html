@@ -4,13 +4,39 @@
   </head>
   <body>
     <h1>迷路</h1>
-    サイズ
-    横: <input type="number" id="numberInputWidth" value="35" min="5">
-    縦: <input type="number" id="numberInputHeight" value="35" min="5">
-    <button id="buttonMakeMazeLaying">棒倒し法で迷路を作る！</button>
-    <button id="buttonMakeMazeDigging">穴掘り法で迷路を作る！</button>
-    <button id="buttonResolve">迷路を解く！</button>
-    <div id="maze"></div>
+    <div style="display: flex;">
+      <div style="text-align: center; padding: 2px;">
+        <div style="padding: 2px;">サイズ</div>
+        <div style="padding: 2px;">
+          横:
+          <input type="number" id="numberInputWidth"
+            value="35" min="5" style="width:80px;">
+        </div>
+        <div style="padding: 2px;">
+          縦:
+          <input type="number" id="numberInputHeight"
+            value="35" min="5" style="width:80px;">
+        </div>
+        <hr>
+        <div style="padding: 2px;">迷路作成</div>
+        <div style="padding: 2px;">
+          <button id="buttonMakeMazeLaying"
+          >棒倒し法</button>
+        </div>
+        <div style="padding: 2px;">
+          <button id="buttonMakeMazeDigging"
+          >穴掘り法</button>
+        </div>
+        <hr>
+        <div style="padding: 2px;">
+          <button id="buttonResolve"
+          >迷路を解く</button>
+        </div>
+      </div>
+      <div style="padding: 2px;">
+        <div id="maze"></div>
+      </div>
+    </div>
     <script src="./src/maze.mjs" type="module"></script>
     <script src="./src/maze-laying-method.mjs" type="module"></script>
     <script src="./src/maze-resolver.mjs" type="module"></script>

@@ -25,81 +25,113 @@ export class WebApp {
    */
   canvas;
   /**
-   * @type {MazeResolver}
+   * @type {HTMLInputElement}
    */
-  resolver;
-  static async run() {
-    const numberInputWidth = document.getElementById("numberInputWidth");
-    const numberInputHeight = document.getElementById("numberInputHeight");
-    const buttonMakeMazeLaying = document.getElementById("buttonMakeMazeLaying");
-    const buttonMakeMazeDigging = document.getElementById("buttonMakeMazeDigging");
-    const buttonResolve = document.getElementById("buttonResolve");
+  numberInputWidth;
+  /**
+   * @type {HTMLInputElement}
+   */
+  numberInputHeight;
+  /**
+   * @type {HTMLButtonElement}
+   */
+  buttonMakeMazeLaying;
+  /**
+   * @type {HTMLButtonElement}
+   */
+  buttonMakeMazeDigging;
+  /**
+   * @type {HTMLButtonElement}
+   */
+  buttonResolve;
+  /**
+   * @type {HTMLDivElement}
+   */
+  mazeContainer;
 
-    let lastSizeX = parseInt(numberInputWidth.value);
-    let lastSizeY = parseInt(numberInputHeight.value);
+  constructor() {
+    this.mazeContainer = document.getElementById("maze");
 
-    const app = new WebApp();
-    app.canvas = null;
-    app.resolver = null;
-    app.maze = new MazeNoMaze(lastSizeX, lastSizeY);
-    await app.updateSize(lastSizeX, lastSizeY);
+    this.numberInputWidth = document.getElementById("numberInputWidth");
+    this.numberInputWidth.addEventListener("change",
+      () => this.numberInputWidth_change());
 
-    numberInputWidth.addEventListener("change", () => {
-      const value = parseInt(numberInputWidth.value);
-      if (value % 2 !== 0) {
-        lastSizeX = value;
-      } else {
-        if (value < lastSizeX) {
-          numberInputHeight.value = `${value - 1}`;
-        } else {
-          numberInputHeight.value = `${value + 1}`;
-        }
-      }
-    });
-    numberInputHeight.addEventListener("change", () => {
-      const value = parseInt(numberInputHeight.value);
-      if (value % 2 !== 0) {
-        lastSizeY = value;
-      } else {
-        if (value < lastSizeY) {
-          numberInputHeight.value = `${value - 1}`;
-        } else {
-          numberInputHeight.value = `${value + 1}`;
-        }
-      }
-    });
-    buttonMakeMazeLaying.addEventListener("click", () => {
-      app.maze = new MazeLayingMethod(app.sizeX, app.sizeY);
-      app.updateSize(lastSizeX, lastSizeY);
-    });
-    buttonMakeMazeDigging.addEventListener("click", () => {
-      app.maze = new MazeDiggingMethod(app.sizeX, app.sizeY);
-      app.updateSize(lastSizeX, lastSizeY);
-    });
-    buttonResolve.addEventListener("click", async () => {
-      await app.resolveMaze();
-    });
+    this.numberInputHeight = document.getElementById("numberInputHeight");
+    this.numberInputHeight.addEventListener("change",
+      () => numberInputHeight_change());
+
+    this.buttonMakeMazeLaying = document.getElementById("buttonMakeMazeLaying");
+    this.buttonMakeMazeLaying.addEventListener("click",
+      () => this.setMaze(new MazeLayingMethod(this.lastInputSizeX, this.lastInputSizeY)));
+
+    this.buttonMakeMazeDigging = document.getElementById("buttonMakeMazeDigging");
+    this.buttonMakeMazeDigging.addEventListener("click",
+      () => this.setMaze(new MazeDiggingMethod(this.lastInputSizeX, this.lastInputSizeY)));
+
+    this.buttonResolve = document.getElementById("buttonResolve");
+    this.buttonResolve.addEventListener("click",
+      async () => await buttonResolve_click());
+
+    this.lastInputSizeX = parseInt(this.numberInputWidth.value);
+    this.lastInputSizeY = parseInt(this.numberInputHeight.value);
+    this.canvas = null;
   }
-  async updateSize(sizeX, sizeY) {
-    if (this.sizeX !== sizeX || this.sizeY !== sizeY) {
-      this.sizeX = sizeX;
-      this.sizeY = sizeY;
-      this.refreshCanvas();
+  async init() {
+    const maze = new MazeNoMaze(this.lastInputSizeX, this.lastInputSizeY)
+    await this.setMaze(maze);
+  }
+  numberInputWidth_change() {
+    if (value !== this.lastInputSizeX) {
+      if (value % 2 !== 0) {
+        this.lastInputSizeX = value;
+      } else {
+        if (value < this.lastInputSizeX) {
+          this.numberInputHeight.value = `${value - 1}`;
+        } else {
+          this.numberInputHeight.value = `${value + 1}`;
+        }
+      }
+    }
+  }
+  numberInputHeight_change() {
+    const value = parseInt(this.numberInputHeight.value);
+    if (value !== this.lastInputSizeY) {
+      if (value % 2 !== 0) {
+        this.lastInputSizeY = value;
+      } else {
+        if (value < this.lastInputSizeY) {
+          this.numberInputHeight.value = `${value - 1}`;
+        } else {
+          this.numberInputHeight.value = `${value + 1}`;
+        }
+      }
+    }
+  }
+  async buttonResolve_click() {
+    const resolver = new MazeResolver(this.maze);
+    await this.buryDeadEndAll(resolver);
+    await this.walkThroughout(resolver);
+  }
+  /**
+   * 新しい迷路を作成する
+   * @param {Maze} maze 
+   */
+  async setMaze(maze) {
+    this.maze = maze;
+    if (this.sizeX !== maze.sizeX || this.sizeY !== maze.sizeY) {
+      this.sizeX = maze.sizeX;
+      this.sizeY = maze.sizeY;
+      while (this.mazeContainer.firstElementChild) {
+        this.mazeContainer.firstElementChild.remove();
+      }
+      this.canvas = document.createElement("canvas");
+      this.canvas.setAttribute("width", `${this.sizeX * WebApp.cellSize}px`);
+      this.canvas.setAttribute("height", `${this.sizeY * WebApp.cellSize}px`);
+      this.mazeContainer.appendChild(this.canvas);
     }
     await this.clearMaze();
     await this.generateMaze();
     await this.refreshMaze();
-  }
-  refreshCanvas() {
-    const mazeElement = document.getElementById("maze");
-    while (mazeElement.firstElementChild) {
-      mazeElement.firstElementChild.remove();
-    }
-    const canvas = document.createElement("canvas");
-    canvas.setAttribute("width", `${this.sizeX * WebApp.cellSize}px`);
-    canvas.setAttribute("height", `${this.sizeY * WebApp.cellSize}px`);
-    this.canvas = canvas;
-    mazeElement.appendChild(this.canvas);
   }
   async clearMaze() {
     await new Promise((resolve, reject) => {
@@ -133,18 +165,13 @@ export class WebApp {
     this.maze.setStartPosition(0, 1);
     this.maze.setGoalPosition(this.sizeX - 1, this.sizeY - 2);
     this.drawMaze();
-    this.resolver = new MazeResolver(this.maze);
   }
-  async resolveMaze() {
-    await this.buryDeadEndAll();
-    await this.walkThroughout();
-  }
-  buryDeadEndAll() {
+  buryDeadEndAll(resolver) {
     return new Promise((resolve, reject) => {
       let tid = null;
       const beryDeadEnd1 = () => {
         try {
-          const buried = this.resolver.buryDeadEnd();
+          const buried = resolver.buryDeadEnd();
           if (buried.length === 0) {
             clearInterval(tid);
             resolve();
@@ -160,15 +187,15 @@ export class WebApp {
       beryDeadEnd1();
     });
   }
-  walkThroughout() {
+  walkThroughout(resolver) {
     return new Promise((resolve, reject) => {
       let tid = null;
       const walkThrough1 = () => {
         try {
-          const steps = this.resolver.walk();
-          const paths = this.resolver.path.slice(-steps);
+          const steps = resolver.walk();
+          const paths = resolver.path.slice(-steps);
           this.drawPath(paths);
-          const { x, y } = this.resolver.pos;
+          const { x, y } = resolver.pos;
           if (this.maze.isGoal(x, y)) {
             clearInterval(tid);
             resolve();
