@@ -58,7 +58,7 @@ export class WebApp {
 
     this.numberInputHeight = document.getElementById("numberInputHeight");
     this.numberInputHeight.addEventListener("change",
-      () => numberInputHeight_change());
+      () => this.numberInputHeight_change());
 
     this.buttonMakeMazeLaying = document.getElementById("buttonMakeMazeLaying");
     this.buttonMakeMazeLaying.addEventListener("click",
@@ -80,15 +80,36 @@ export class WebApp {
     const maze = new MazeNoMaze(this.lastInputSizeX, this.lastInputSizeY)
     await this.setMaze(maze);
   }
+  disableUI(state) {
+    this.numberInputWidth.disabled = state;
+    this.numberInputHeight.disabled = state;
+    this.buttonMakeMazeLaying.disabled = state;
+    this.buttonMakeMazeDigging.disabled = state;
+    this.buttonResolve.disabled = state;
+    const cursor = state ? "wait" : "default";
+    document.body.style.cursor = cursor;
+    this.numberInputWidth.style.cursor = cursor;
+    this.numberInputHeight.style.cursor = cursor;
+    this.buttonMakeMazeLaying.style.cursor = cursor;
+    this.buttonMakeMazeDigging.style.cursor = cursor;
+    this.buttonResolve.style.cursor = cursor;
+  }
   numberInputWidth_change() {
+    const value = parseInt(this.numberInputWidth.value);
     if (value !== this.lastInputSizeX) {
-      if (value % 2 !== 0) {
+      const min = parseInt(this.numberInputWidth.min);
+      if (value < min) {
+        this.numberInputWidth.value = min;
+        this.lastInputSizeX = min;
+      } else if (value % 2 !== 0) {
         this.lastInputSizeX = value;
       } else {
         if (value < this.lastInputSizeX) {
-          this.numberInputHeight.value = `${value - 1}`;
+          this.numberInputWidth.value = `${value - 1}`;
+          this.lastInputSizeX = value - 1;
         } else {
-          this.numberInputHeight.value = `${value + 1}`;
+          this.numberInputWidth.value = `${value + 1}`;
+          this.lastInputSizeX = value + 1;
         }
       }
     }
@@ -96,27 +117,36 @@ export class WebApp {
   numberInputHeight_change() {
     const value = parseInt(this.numberInputHeight.value);
     if (value !== this.lastInputSizeY) {
-      if (value % 2 !== 0) {
+      const min = parseInt(this.numberInputHeight.min);
+      if (value < min) {
+        this.numberInputHeight.value = min;
+        this.lastInputSizeY = min;
+      } else if (value % 2 !== 0) {
         this.lastInputSizeY = value;
       } else {
         if (value < this.lastInputSizeY) {
           this.numberInputHeight.value = `${value - 1}`;
+          this.lastInputSizeY = value - 1;
         } else {
           this.numberInputHeight.value = `${value + 1}`;
+          this.lastInputSizeY = value + 1;
         }
       }
     }
   }
   async buttonResolve_click() {
+    this.disableUI(true);
     const resolver = new MazeResolver(this.maze);
     await this.buryDeadEndAll(resolver);
     await this.walkThroughout(resolver);
+    this.disableUI(false);
   }
   /**
    * 新しい迷路を作成する
    * @param {Maze} maze 
    */
   async setMaze(maze) {
+    this.disableUI(true);
     this.maze = maze;
     if (this.sizeX !== maze.sizeX || this.sizeY !== maze.sizeY) {
       this.sizeX = maze.sizeX;
@@ -132,6 +162,7 @@ export class WebApp {
     await this.clearMaze();
     await this.generateMaze();
     await this.refreshMaze();
+    this.disableUI(false);
   }
   async clearMaze() {
     await new Promise((resolve, reject) => {
