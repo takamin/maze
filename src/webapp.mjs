@@ -70,7 +70,7 @@ export class WebApp {
 
     this.buttonResolve = document.getElementById("buttonResolve");
     this.buttonResolve.addEventListener("click",
-      async () => await buttonResolve_click());
+      async () => await this.buttonResolve_click());
 
     this.lastInputSizeX = parseInt(this.numberInputWidth.value);
     this.lastInputSizeY = parseInt(this.numberInputHeight.value);
