@@ -1,4 +1,5 @@
 import { MazeDiggingMethod } from "./maze-digging-method.mjs";
+import { MazeExtendingMethod } from "./maze-extending-method.mjs";
 import { MazeLayingMethod } from "./maze-laying-method.mjs";
 import { MazeNoMaze } from "./maze-no-maze.mjs";
 import { MazeResolver } from "./maze-resolver.mjs";
@@ -68,6 +69,10 @@ export class WebApp {
     this.buttonMakeMazeDigging.addEventListener("click",
       () => this.setMaze(new MazeDiggingMethod(this.lastInputSizeX, this.lastInputSizeY)));
 
+    this.buttonMakeMazeExtending = document.getElementById("buttonMakeMazeExtending");
+    this.buttonMakeMazeExtending.addEventListener("click",
+      () => this.setMaze(new MazeExtendingMethod(this.lastInputSizeX, this.lastInputSizeY)));
+
     this.buttonResolve = document.getElementById("buttonResolve");
     this.buttonResolve.addEventListener("click",
       async () => await this.buttonResolve_click());
@@ -85,6 +90,7 @@ export class WebApp {
     this.numberInputHeight.disabled = state;
     this.buttonMakeMazeLaying.disabled = state;
     this.buttonMakeMazeDigging.disabled = state;
+    this.buttonMakeMazeExtending.disabled = state;
     this.buttonResolve.disabled = state;
     const cursor = state ? "wait" : "default";
     document.body.style.cursor = cursor;
@@ -92,6 +98,7 @@ export class WebApp {
     this.numberInputHeight.style.cursor = cursor;
     this.buttonMakeMazeLaying.style.cursor = cursor;
     this.buttonMakeMazeDigging.style.cursor = cursor;
+    this.buttonMakeMazeExtending.style.cursor = cursor;
     this.buttonResolve.style.cursor = cursor;
   }
   numberInputWidth_change() {
