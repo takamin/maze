@@ -135,11 +135,16 @@ export class WebApp {
     }
   }
   async buttonResolve_click() {
-    this.disableUI(true);
-    const resolver = new MazeResolver(this.maze);
-    await this.buryDeadEndAll(resolver);
-    await this.walkThroughout(resolver);
-    this.disableUI(false);
+    try {
+      this.disableUI(true);
+      const resolver = new MazeResolver(this.maze);
+      await this.buryDeadEndAll(resolver);
+      await this.walkThroughout(resolver);
+    } catch(err) {
+      alert(err);
+    } finally {
+      this.disableUI(false);
+    }
   }
   /**
    * 新しい迷路を作成する
