@@ -63,7 +63,9 @@ export class MazeResolver {
         throw new Error('Cannot go anywhere');
       }
       if (posCanGo.length > 1) {
-        throw new Error('Invalid path. The path has a branch');
+        const err = new Error('Invalid path. The path has a branch');
+        err.pathToGo = posCanGo;
+        throw err;
       }
       p.x = posCanGo[0].x;
       p.y = posCanGo[0].y;

@@ -1,3 +1,4 @@
+import { MazeResolver } from "./maze-resolver.mjs";
 import { Maze } from "./maze.mjs";
 
 export class MazeLayingMethod extends Maze {
@@ -10,20 +11,6 @@ export class MazeLayingMethod extends Maze {
     this.stickMapY = (this.sizeY - 3) / 2;
     this.stickMapLength = this.stickMapX * this.stickMapY;
     this.stickMap = Array(this.stickMapLength).fill(null);
-    // this.setWallAt(2, 2);
-    // this.setWallAt(2, 3);
-    // this.setWallAt(2, 4);
-    // this.setWallAt(3, 2);
-    // this.setWallAt(3, 4);
-    // this.setWallAt(4, 2);
-    // this.setWallAt(4, 3);
-    // this.setWallAt(4, 4);
-    // const closed = this.checkWallClosed([], 4, 4);
-    // this.setAisleAt(4, 2);
-    // this.setAisleAt(4, 3);
-    // const canSet = this.canSetWall(4, 4 - 1, 4, 4 - 2);
-    // const dir = this.getDirectionAt(4, 4);
-    // console.log(JSON.stringify({closed, canSet, dir}));
   }
   /**
    * 壁の起点となる支柱を立てる竪穴の数を返す。
@@ -85,22 +72,18 @@ export class MazeLayingMethod extends Maze {
 
     if(paths.find((path) => path.x === x && path.y === y)) {
       // すでに通過済みのパスに戻った
-      console.log(`CLOSED: ${JSON.stringify({x, y, paths})}`);
       return true; // 壁が閉じている(閉鎖空間がある)
     }
     const nextPaths = [...paths, { x, y }];
 
     const checkWallClosed = (x, y) => {
       if(isLastPos(x, y)) {
-        // console.log(`LAST POSITION: ${JSON.stringify({x, y, paths: nextPaths})}`);
         return false;
       }
       if(x < 1 || x >= this.sizeX - 1 || y < 1 || y >= this.sizeY - 1) {
-        // console.log(`OUT OF RANGE: ${JSON.stringify({x, y, paths: nextPaths})}`);
         return false;
       }
       if(!this.isWall(x, y)) {
-        // console.log(`NOT A WALL: ${JSON.stringify({x, y, paths: nextPaths})}`);
         return false;
       }
       return this.checkWallClosed([...nextPaths], x, y);
@@ -143,7 +126,49 @@ export class MazeLayingMethod extends Maze {
     // 倒していない棒の数
     const standingSticks = this.getStandingSticksCount();
     if (standingSticks === 0) {
-      return true; // 終了
+      //
+      // 複数の経路が存在する場合、ひとつを残して他の経路の分岐点を閉じる。
+      //
+
+      // 迷路を解く奴(複数経路の有無を検査するため)
+      const resolver = new MazeResolver(this);
+      resolver.reset();
+      // 袋小路を壁で塞ぐ(塞いだ場所がなくなるまで)
+      while(resolver.buryDeadEnd().length > 0) {
+        ;
+      }
+      try {
+        // スタートからゴールまでを順次移動する
+        for (;;) {
+          resolver.walk(); // 分岐している場合、例外が投入される。
+          const { x, y } = resolver.pos;
+          if(this.isGoal(x, y)) {
+            break; // ゴールに到達(一本道だった)
+          }
+        }
+        return true; // 終了
+      } catch(err) {
+        console.error(err);
+        if(!err.pathToGo) {
+          return true;
+        } else {
+          // 例外に含まれる分岐点の情報を得る
+          const branchEntrances = err.pathToGo ?? [];
+
+          // 分岐点の入口をランダムにひとつ選び、他の入口を壁にする
+          const iAisle = Math.floor(branchEntrances.length * Math.random());
+
+          // 壁として設定した座標を返す（表示更新のため）
+          return branchEntrances.filter((p, i) => {
+            if(i !== iAisle) {
+              this.setWallAt(p.x, p.y); // 入口を壁にする
+              return true;
+            }
+
+            return false;
+          });
+        }
+      }
     }
     const stickIndex = this.getNextEmptyStickIndex(standingSticks);
     this.stickMap[stickIndex] = true;

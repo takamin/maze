@@ -165,6 +165,8 @@ export class WebApp {
       this.mazeContainer.appendChild(this.canvas);
     }
     await this.clearMaze();
+    this.maze.setStartPosition(0, 1);
+    this.maze.setGoalPosition(this.sizeX - 1, this.sizeY - 2);
     await this.generateMaze();
     await this.refreshMaze();
     this.disableUI(false);
